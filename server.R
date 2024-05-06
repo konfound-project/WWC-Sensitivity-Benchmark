@@ -1,53 +1,43 @@
-
-
 library(shiny)
 library(tidyverse)
 library(readxl)
 library(shinythemes)
 
+library(shinyjs)
+library(shinyscreenshot)
+
+# install.packages("remotes")
+#remotes::install_github("deepanshu88/shinyDarkmode")
+library(shinyDarkmode)
+
+
+################################################################################
+
 data <- readxl::read_excel("Shiny_Data.xlsx")
 
-# Start of App
-ui <- fluidPage(
-  theme = shinytheme("flatly"),
-  titlePanel("What Works Clearinghouse: Sensitivity Analysis Benchmarks (BETA)"),
-  sidebarLayout(
-    sidebarPanel(
-      selectInput("selectedStudyDesign", "Choose a Study Design:",
-                  choices = c("All", setdiff(unique(data$s_Study_Design), c(NA, "?", "Uncertain"))),
-                  selected = "All"),
-      selectInput("selectedDomain", "Choose an Outcome Domain Group:",
-                  choices = c("All", sort(setdiff(unique(data$`Outcome Domain Group Expanded`), c(NA, "?", "Uncertain")))),
-                  selected = "All"),
-      selectInput("selectedDichCont", "Choose Dichotomous or Continuous Outcome Measures:",
-                  choices = c("All", setdiff(unique(data$`Dichotomous or Continuous`), c(NA, "?", "Uncertain"))),
-                  selected = "All"),
-      selectInput("selectedFindingRating", "Choose WWC Finding Rating:",
-                  choices = c("All", setdiff(unique(data$f_Finding_Rating), c(NA, "?", "Uncertain"))),
-                  selected = "All"),
-      selectInput("selectedVariable", "Choose a Sensitivity Measure:",
-                  choices = c("Robustness of Inferences to Replacement (RIR)" = "RIR.g", "RIR as a percentage of Sample Size" = "RIR_percent", "Unselected"),
-                  selected = "Unselected")
-    ),
-    mainPanel(
-      plotOutput("histPlot", height = "400px"),
-      br(),
-      wellPanel(
-        h4("Descriptive Statistics"),
-        div(
-          style = "overflow-x: auto;",
-          tableOutput("descriptiveStatsTable")
-        ),
-        br(),
-        h4("Place Your Value in Distribution"),
-        numericInput("userValue", "Enter your value:", value = NULL),
-        textOutput("percentileResult")
-      )
-    )
-  )
-)
+################################################################################
 
-server <- function(input, output) {
+
+
+jscode <- "shinyjs.refresh_page = function() { history.go(0); }" 
+
+
+server <- function(input, output, session) {
+  
+  darkmode(buttonColorDark = "#7f9f3d",  # Background color of the button while in lightmode
+           buttonColorLight = "#639dad",  # Background color of the button while in darkmode
+           backgroundColor = "#fff",  # Background color of the page while in lightmode
+           mixColor = "#fff",  # Color used to generate darkmode: lighter colors create darker darkmode
+           label = "<strong>|</strong>",  # Text that shows up on the darkmode button
+           bottom = "32px",
+           right = "16px",
+           autoMatchOsTheme = TRUE
+  )
+  
+################################################################################
+  ###### GENERATE LINEAR RIR/ITCV RESULTS ###### 
+################################################################################
+  
   filtered_data <- reactive({
     filter_condition <- rep(TRUE, nrow(data))
     if (input$selectedDomain != "All") {
@@ -162,6 +152,7 @@ server <- function(input, output) {
       ""
     }
   })
+  
+  
+  
 }
-
-shinyApp(ui = ui, server = server)
