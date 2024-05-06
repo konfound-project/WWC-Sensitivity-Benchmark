@@ -25,7 +25,7 @@ shinyUI(
     theme = shinythemes::shinytheme("lumen"),
     use_darkmode(),
     
-    tags$head(HTML("<title>What Works Clearinghouse: Sensitivity Analysis Benchmarks (BETA)</title><link rel='icon' href='konfound-logo-rectangle.png' type='image/gif/png'>"),
+    tags$head(HTML("<title>Sensitivity Analysis Benchmarks: What Works Clearinghouse</title><link rel='icon' href='konfound-logo-rectangle.png' type='image/gif/png'>"),
               tags$script(src="script.js"),
               tags$style(HTML("
               
@@ -267,9 +267,9 @@ shinyUI(
     titlePanel(title = div(img(style = "height:0.75em; vertical-align:center; margin-bottom: 18px;",
                                src = "konfound-logo-rectangle.png",
                                alt = "Konfound R package logo"), 
-                           "What Works Clearinghouse")),
+                           "Sensitivity Analysis Benchmarks")),
 
-    h3("Sensitivity Analysis Benchmarks (BETA)"),
+    h3("Data from What Works Clearinghouse"),
 
     tags$p(actionButton("visit_website_button",
                   icon = icon("globe", lib = "font-awesome"),
@@ -328,6 +328,13 @@ shinyUI(
                           
                           
                           wellPanel(
+                            h4("Place Your Value in Distribution"),
+                            numericInput("userValue", "Enter your value:", value = NULL),
+                            textOutput("percentileResult")
+                          ),
+                          
+                          
+                          wellPanel(
                             h4("Descriptive Statistics"),
                             div(
                               style = "overflow-x: auto;",
@@ -335,11 +342,6 @@ shinyUI(
                             ),
                           ),
                           
-                          wellPanel(
-                            h4("Place Your Value in Distribution"),
-                            numericInput("userValue", "Enter your value:", value = NULL),
-                            textOutput("percentileResult")
-                          ),
                           
                           column(12,
                                  screenshotButton(inputId = "screenshot_button",
@@ -355,7 +357,10 @@ shinyUI(
                       ),
              ),
  
+             
+             
 ################################################################################
+
 
              
              tabPanel(div(icon("screwdriver-wrench", lib = "font-awesome"), " Resources"),
@@ -379,7 +384,7 @@ shinyUI(
                         tags$li(tags$a(href="https://github.com/konfound-project/konfound", "R package (development version)")),
                         tags$li(tags$a(href="https://konfound-project.shinyapps.io/konfound-it/", "R Shiny app")),
                         tags$li(tags$a(href="https://doi.org/10.1177/1536867X19874223", "Stata package")),
-                        tags$li(tags$a(href="https://konfound-project.shinyapps.io/wwc-sensitivity-benchmark/", "Benchmarks: What Works Clearinghouse"), "[BETA]")
+                        tags$li(tags$a(href="https://konfound-project.shinyapps.io/wwc-sensitivity-benchmark/", "Sensitivity Analysis Benchmarks: Data from What Works Clearinghouse"), "[BETA]")
                       ),
                       hr(),
                       
