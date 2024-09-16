@@ -13,7 +13,8 @@ library(shinyDarkmode)
 
 ################################################################################
 
-data <- readxl::read_excel("Shiny_Data.xlsx")
+#data <- readxl::read_excel("Shiny_Data.xlsx")
+data <- readRDS("wwc-shiny.RDS")
 
 ################################################################################
 
@@ -297,21 +298,43 @@ shinyUI(
                               
                                   
                               selectInput("selectedStudyDesign", "Choose a Study Design:",
-                                          choices = c("All", setdiff(unique(data$s_Study_Design), c(NA, "?", "Uncertain"))),
+                                          #choices = c("All", setdiff(unique(data$s_Study_Design), c(NA, "?", "Uncertain"))),
+                                          choices = c("All", 
+                                                      "Randomized Controlled Trial" = "RCT",
+                                                      "Quasi-Experiment" = "QE"),
                                           selected = "All"),
                               selectInput("selectedDomain", "Choose an Outcome Domain Group:",
-                                          choices = c("All", sort(setdiff(unique(data$`Outcome Domain Group Expanded`), c(NA, "?", "Uncertain")))),
-                                          selected = "All"),
+                                          #choices = c("All", sort(setdiff(unique(data$`Outcome Domain Group Expanded`), c(NA, "?", "Uncertain")))),
+                                         # choices = list(
+                                        #    "Primary Domains" = c("All", sort(unique(data$`Outcome Domain Group`))),
+                                        #    "Sub-Domains of Academic Readiness" = c(unique(data$`Outcome Domain Group Expanded`)),
+                                        #  ),
+                                        #  selected = "All"),
+                                        choices = list(
+                                          #"Main Domains" = c("A", "B", "C"),
+                                          "Main Domains" = c("All", sort(unique(data$`Outcome Domain Group`))),
+                                          #"Sub-Domains of A" = c("A1", "A2", "A3")
+                                          #"Sub-Domains of A" = unique(data$`Outcome Domain Group Expanded`)
+                                          "Sub-Domains of Academic Readiness" = c("Literacy" = "ARKS - Literacy",
+                                                                 "Mathematics" = "ARKS - Mathematics",
+                                                                 "Science" = "ARKS - Science",
+                                                                 "Social Studies" = "ARKS - Social Studies")
+                                        )
+                                      ),
+                      
                               selectInput("selectedDichCont", "Choose Dichotomous or Continuous Outcome Measures:",
-                                          choices = c("All", setdiff(unique(data$`Dichotomous or Continuous`), c(NA, "?", "Uncertain"))),
+                                          choices = c("All", setdiff(unique(data$outcome_type), c(NA, "?", "Uncertain"))),
                                           selected = "All"),
                               selectInput("selectedFindingRating", "Choose WWC Finding Rating:",
                                           choices = c("All", setdiff(unique(data$f_Finding_Rating), c(NA, "?", "Uncertain"))),
                                           selected = "All"),
                               selectInput("selectedVariable", "Choose a Sensitivity Measure:",
-                                          choices = c("Robustness of Inferences to Replacement (RIR)" = "RIR.g", "RIR as a percentage of Sample Size" = "RIR_percent", "Unselected"),
+                                          choices = c("Robustness of Inferences to Replacement (RIR)" = "RIR_primary", 
+                                                      "RIR as a percentage of Sample Size" = "RIR_percent", 
+                                                      "Fragility (dichotomous only)" = "fragility_primary.lo",
+                                                      "Unselected"),
                                           selected = "Unselected")
-                            ),
+                        ),
                         
                         
                         mainPanel(
@@ -328,7 +351,7 @@ shinyUI(
                           
                           
                           wellPanel(
-                            h4("Place Your Value in Distribution"),
+                            h4("Place Your Value in the Distribution"),
                             numericInput("userValue", "Enter your value:", value = NULL),
                             textOutput("percentileResult")
                           ),

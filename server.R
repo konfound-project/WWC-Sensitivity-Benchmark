@@ -13,7 +13,8 @@ library(shinyDarkmode)
 
 ################################################################################
 
-data <- readxl::read_excel("Shiny_Data.xlsx")
+#data <- readxl::read_excel("Shiny_Data.xlsx")
+data <- readRDS("wwc-shiny.RDS")
 
 ################################################################################
 
@@ -41,13 +42,18 @@ server <- function(input, output, session) {
   filtered_data <- reactive({
     filter_condition <- rep(TRUE, nrow(data))
     if (input$selectedDomain != "All") {
-      filter_condition <- filter_condition & data$`Outcome Domain Group Expanded` == input$selectedDomain
+      if (input$selectedDomain == "Academic Readiness, Knowledge, or Skills (Pre-K through Postsecondary)") {
+        filter_condition <- filter_condition & data$`Outcome Domain Group` == input$selectedDomain  
+        } else {
+            filter_condition <- filter_condition & data$`Outcome Domain Group Expanded` == input$selectedDomain  
+        }
     }
     if (input$selectedStudyDesign != "All") {
       filter_condition <- filter_condition & data$s_Study_Design == input$selectedStudyDesign
     }
     if (input$selectedDichCont != "All") {
-      filter_condition <- filter_condition & data$`Dichotomous or Continuous` == input$selectedDichCont
+      #filter_condition <- filter_condition & data$`Dichotomous or Continuous` == input$selectedDichCont
+      filter_condition <- filter_condition & data$outcome_type == input$selectedDichCont
     }
     if (input$selectedFindingRating != "All") {
       filter_condition <- filter_condition & data$f_Finding_Rating == input$selectedFindingRating
@@ -62,21 +68,21 @@ server <- function(input, output, session) {
         geom_histogram(bins = 30, fill = "#619CFF", color = "#619CFF", alpha = 0.8) +
         theme_minimal() +
         labs(x = case_when(
-          variable_to_plot == "RIR.g" ~ "RIR values",
+          variable_to_plot == "RIR_primary" ~ "RIR values",
           variable_to_plot == "RIR_percent" ~ "RIR as a percentage of Sample Size values",
           TRUE ~ ""
         ),
         y = "Frequency") +
         theme(plot.title = element_text(size = 16, face = "bold"))
       
-      if (variable_to_plot == "RIR.g") {
+      if (variable_to_plot == "RIR_primary") {
         p <- p + scale_x_continuous(labels = scales::comma, limits = c(0, 1000))
       } else {
         p <- p + scale_x_continuous(labels = scales::comma)
       }
       
       if (!is.null(input$userValue) && !is.na(input$userValue) && 
-          (input$selectedVariable == "RIR.g" || input$selectedVariable == "RIR_percent")) {
+          (input$selectedVariable == "RIR_primary" || input$selectedVariable == "RIR_percent")) {
         p <- p + geom_vline(xintercept = input$userValue, color = "red", linetype = "solid")
       }
       
@@ -97,32 +103,19 @@ server <- function(input, output, session) {
       numeric_values <- filtered_data_subset[, variable_to_analyze]
       numeric_values <- numeric_values[!is.na(numeric_values)]
       
-      if (length(numeric_values) > 0) {
-        if (variable_to_analyze == "RIR.g") {
-          numeric_values <- round(numeric_values)
-          stats <- summary(numeric_values)
-          stats <- round(stats)
-        } else if (variable_to_analyze == "RIR_percent") {
-          stats <- summary(numeric_values)
-          stats <- round(stats, 2)
-        }
+        if (length(numeric_values) > 0) {
+            numeric_values <- round(numeric_values)
+            stats <- summary(numeric_values)
+            stats <- round(stats,2)
+            count <- length(numeric_values)
+            sd_value <- sd(numeric_values,2)
         
-        count <- length(numeric_values)
-        sd_value <- sd(numeric_values)
-        
-        if (variable_to_analyze == "RIR.g") {
-          sd_value <- round(sd_value)
-        } else if (variable_to_analyze == "RIR_percent") {
-          sd_value <- round(sd_value, 2)
-        }
-        
-        stat_names <- c("Count", "Minimum", "1st Quartile", "Median", "Mean", "3rd Quartile", "Maximum", "Standard Deviation")
-        stat_table <- data.frame(
-          Statistic = stat_names,
-          Value = c(count, stats[1], stats[2], stats[3], stats[4], stats[5], stats[6], sd_value)
+            stat_names <- c("Count", "Minimum", "1st Quartile", "Median", "Mean", "3rd Quartile", "Maximum", "Standard Deviation")
+            stat_table <- data.frame(
+            Statistic = stat_names,
+            Value = c(count, stats[1], stats[2], stats[3], stats[4], stats[5], stats[6], sd_value)
         )
         colnames(stat_table) <- c("Statistic", paste("Value"))
-        
         stat_table
       } else {
         data.frame(Message = "No numeric data available for the selected variable.")
@@ -136,7 +129,7 @@ server <- function(input, output, session) {
   output$percentileResult <- renderText({
     req(input$selectedVariable, input$userValue)
     
-    if (input$selectedVariable %in% c("RIR.g", "RIR_percent")) {
+    if (input$selectedVariable %in% c("RIR_primary", "RIR_percent")) {
       user_value <- input$userValue
       filtered_data_subset <- filtered_data()[, input$selectedVariable]
       
@@ -144,7 +137,8 @@ server <- function(input, output, session) {
         "Input your value"
       } else if (!is.na(user_value) && user_value >= 0) {
         percentile <- mean(filtered_data_subset <= user_value, na.rm = TRUE) * 100
-        paste0("Your value of ", user_value, " is in the ", round(percentile, 2), "th percentile.")
+       # paste0("Your value of ", user_value, " is in the ", round(percentile, 2), "th percentile.")
+        paste0("Your value of ", user_value, " is equal to or greater than ", round(percentile), "% of the values in the selected reference distribution.")
       } else {
         ""
       }

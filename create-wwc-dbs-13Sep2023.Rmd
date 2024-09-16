@@ -1,0 +1,447 @@
+---
+title: "create-wwc-dbs-13Sep2023"
+output: 
+  html_document:
+     number_sections: true
+date: "2024-07-16"
+---
+
+```{r, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Overview and Initialization
+This R Markdown file calculates sensitivity measures for findings in the WWC. It imports three files:
+
+1. "Interventions_Studies_And_Findings-13Sep2023.csv": Data downloaded from the WWC website on the date denoted in the filename.
+
+2. "Outcome Domain Groups.xlsx": A file containing sub-domains of the high-level WWC outcome categories that we created.
+
+3."dichotomous.xlsx": A file containing our coding of finding outcomes as continuous, dichotomous, or unknown.
+
+It produces two files:
+
+1. "wwc-merged-DATE.RDS": A file that merges all the calculated sensitivity analysis information with the original WWC data fields. DATE refers to the date that the WWC data was downloaded from the WWC website ("Interventions_Studies_And_Findings.xlsx" file)
+
+2. "wwc-shiny-DATE.RDS": A somewhat trimmed down version of wwc-merged.RDS to use with the R Shiny app that provides the benchmark distributions. DATE refers to the date that the WWC data was downloaded from the WWC website ("Interventions_Studies_And_Findings.xlsx" file)
+
+
+
+```{r}
+library(tidyverse)
+library(konfound)
+library(readxl)
+
+rm(list = ls()) 
+#setwd("/Users/smarouli/Dropbox (ASU)/causal inference/IES/What Works Clearinghouse Project/benchmarks-db")
+
+packageVersion("konfound")
+
+```
+
+
+# Import and clean up WWC data
+
+```{r}
+wwc <- read_csv("Interventions_Studies_And_Findings-13Sep2023.csv")
+
+# getting some warnings on the import. Can see them by running: problems(wwc)
+# It looks like some rows have a value of 1.00 and it is getting confused by it. 
+# Convert columns to numeric columns so that it is either 1 or NA if blank.
+wwc <- wwc %>% mutate(across(c(61, 64, 101, 105, 106, 196), as.numeric))
+
+# recode study design labels
+wwc <- wwc %>% mutate(s_Study_Design = 
+                           case_when(s_Study_Design == "Randomized controlled trial" ~ "RCT",
+                                     s_Study_Design == "Randomized Controlled Trial" ~ "RCT",
+                                     s_Study_Design == "Quasi-Experimental Design" ~ "QE",
+                                     s_Study_Design == "Regression Discontinuity Design" ~ "RD",
+                                     s_Study_Design == "Single Case Design" ~ "SC",
+                                     TRUE ~ s_Study_Design
+                           ))
+table(wwc$s_Study_Design, useNA="always")
+
+# replace NA ICC values with 0
+table(wwc$f_ICC, useNA = "always")
+wwc <- wwc %>% mutate(f_ICC = replace_na(f_ICC,0))
+table(wwc$f_ICC, useNA = "always")
+
+# identify and remove findings that do not have a valid WWC effect size
+wwc %>% filter(is.na(f_Effect_Size_WWC)) %>% nrow()
+wwc <- wwc %>% filter(!is.na(f_Effect_Size_WWC))
+nrow(wwc)
+
+# identify and remove findings that do not have a valid sample size
+wwc %>% filter(is.na(f_Outcome_Sample_Size)) %>% nrow()
+wwc %>% filter(f_Outcome_Sample_Size == 0) %>% nrow()
+wwc <- wwc %>% filter(f_Outcome_Sample_Size > 0)
+nrow(wwc)
+
+# Dealing with blank p-values: 
+
+# 108 findings have blank WWC p-values but non-blank study p-values
+# 40 of those were deemed "significant" by WWC. We assume WWC used the 
+# p-value reported in the study to reach this conclusion, but there were
+# several times when the "significance" conclusion and p-values did correspond.
+# Consequently, not entirely sure how to interpret blank WWC p-values, so we are not
+# including those findings. 
+table(is.na(wwc$f_p_Value_Study), is.na(wwc$f_p_Value_WWC))
+wwc <- wwc %>% filter(!is.na(f_p_Value_WWC))
+nrow(wwc)
+
+# Dealing with exactly 0 p-values:
+
+# Upon inspection, we determimed that when a WWC p value is entered as an exact 0, 
+# it really means NA. We removed those as well
+wwc %>% filter(f_p_Value_WWC == 0) %>% nrow()
+wwc <- wwc %>% filter(f_p_Value_WWC !=0)
+nrow(wwc)
+
+# f_Clusters_Total is blank for some reason in the WWC data, so need to calculate ourselves
+# referring to total clusters as "M" 
+wwc <- wwc %>% mutate(M = f_Intervention_Clusters_SS + f_Comparison_Clusters_SS )
+summary(wwc$M)
+wwc %>% filter(is.na(M)) %>% nrow()
+
+## Dealing with M values that are NA: 
+
+# When f_ICC is 0 or left blank in WWC data, we assume this means that M = N (sample size)
+# However, there  seems to be some positive ICC values where M is NA. 
+# removing those findings (looks 9 findings in 4 studies) before setting the NAs to N.
+table(is.na(wwc$M), wwc$f_ICC > 0)
+wwc %>% filter(is.na(M) & f_ICC > 0) %>% 
+  select(s_StudyID, f_FindingID, M, f_Outcome_Sample_Size, f_Intervention_Clusters_SS, 
+         f_Comparison_Clusters_SS, f_ICC, f_Effect_Size_WWC, f_p_Value_WWC, f_L1_Unit_of_Analysis)
+wwc <- wwc %>% filter(!(is.na(M) & f_ICC > 0)) 
+nrow(wwc)
+wwc <- wwc %>% mutate(M = ifelse(is.na(M), f_Outcome_Sample_Size, M))
+wwc <- wwc %>% mutate(M = ifelse(M==0, f_Outcome_Sample_Size, M))
+
+
+# Dealing with p-values that are exactly 1 and effect sizes exactly 0:
+# The WWC data also contain WWC p-values that are exactly 1,
+# and WWW effect sizes that are exactly 0. Both of these lead to
+# problems when we calculate our sensitivity measures. they are also not
+# really going to get used in our robustness benchmarks for invalidation.
+# therefore, we are removing them from the dataset that will be analyzed.
+wwc <- wwc %>% filter(f_Effect_Size_WWC != 0); nrow(wwc)
+wwc <- wwc %>% filter(f_p_Value_WWC < 1); nrow(wwc)
+
+```
+
+# Merge external files that were created manually with WWC dataset
+
+## Import our more refined outcome domain categories
+
+```{r}
+outcome_domain_groups <- read_excel("Outcome Domain Groups-13Sep2023.xlsx")
+outcome_domain_groups <- rename(outcome_domain_groups, f_Outcome_Domain = "Outcome Domain")
+wwc <- left_join(wwc, outcome_domain_groups, by = "f_Outcome_Domain", relationship = "many-to-one")
+table(wwc$`Outcome Domain Group`)
+table(wwc$`Outcome Domain Group Expanded`)
+nrow(wwc)
+
+
+```
+## Import our classification of dichotomous outcomes
+
+(Note: WWC says that an indicator for dichotomous outcomes will be publicly available in the future. Update when it happens)
+```{r}
+dichotomous_continuous_split <- read_excel("dichotomous-13Sep2023.xlsx")
+dichotomous_continuous_split <- dichotomous_continuous_split %>% distinct() # Remove duplicated rows
+dichotomous_continuous_split <- rename(dichotomous_continuous_split, f_Outcome_Measure = "Outcome Measure")
+wwc <- left_join(wwc, dichotomous_continuous_split, by = "f_Outcome_Measure", relationship = "many-to-one")
+table(wwc$outcome_type, useNA="always")
+
+wwc$dichotomous <- ifelse(wwc$outcome_type == "Dichotomous", 1, 0)
+table(wwc$dichotomous, useNA="always")
+
+```
+
+# Calculate values needed for sensitivity analysis
+```{r}
+# calculate degrees of freedom assuming no clusters
+# this uses E.4 from WWC Handbook Ver 5.0
+wwc <- wwc %>% mutate(df.E4 = f_Outcome_Sample_Size - 2)
+wwc %>% select(f_Outcome_Sample_Size, df.E4)
+
+# calculate degrees of freedom for using the E.21 from WWC Handbook Ver 5.0
+# that incorporates the number of clusters
+# (when M=N or f_ICC = 0, this will be equivalent to E.4)
+wwc <- wwc %>% 
+         mutate(df.E21 = ( ( (f_Outcome_Sample_Size - 2) - 2*(f_Outcome_Sample_Size/M - 1)*f_ICC )^2 /
+                            ( (f_Outcome_Sample_Size - 2)*(1 - f_ICC)^2 + 
+                              (f_Outcome_Sample_Size/M)*(f_Outcome_Sample_Size - 2*f_Outcome_Sample_Size/M)*f_ICC^2 +
+                              2*(f_Outcome_Sample_Size - 2*f_Outcome_Sample_Size/M)*f_ICC*(1-f_ICC)  
+                            ) 
+                         ) 
+                )
+
+# back out t-stat from data provided by WWC on effect size and p-value
+wwc <- wwc %>% mutate(t = abs(qt(f_p_Value_WWC/2,df.E21)) )
+wwc <- wwc %>% mutate(t = ifelse(f_Effect_Size_WWC < 0, -t, t) )
+summary(wwc$t)
+
+# now back out the SE from the t, using E.43 in WWC Handbook Ver 5.0, t=g/SE
+wwc <- wwc %>% mutate(SE = f_Effect_Size_WWC / t)
+summary(wwc$SE)
+
+```
+
+# Use pkonfound to calculate sensitivity measures
+These calculations will be the ones used as the WWC benchmark distribution by R Shiny App.
+## Create additional needed variables
+
+```{r}
+# calculate the number of covariates value to enter into pkonfound.
+# pkonfound uses that to calculate degrees of freedom as follows:
+# df = n - ncovariates - 2
+# Since we already directly have the DF we want to use in df.E21,  this implies using 
+# ncovar = n - df.E21 -2 as the  number of covariates to pass to pkonfound
+wwc <- wwc %>% mutate(ncovar = f_Outcome_Sample_Size - df.E21 - 2)
+
+# convert Cox index effect size and SE to log odds scale
+# need this for the dichotomous outcomes
+# calculate for all rows, but will ignore for continuous outcomes
+wwc <- wwc %>% mutate(g.logodds = f_Effect_Size_WWC * 1.65) 
+wwc <- wwc %>% mutate(se.logodds = SE * 1.65) 
+```
+
+## Pkonfound Calculations (All Findings)
+Loop through all findings, ise pkonfound to calculate sensitivity measures for each finding.
+Note: Ignore specialized dichotomous settings for now, and just treat as if every effect size is continuous. Will come back to dichotomous only below.
+
+```{r}
+# create input matrix for pkonfound to loop through
+inputs_r <- wwc %>% pull(f_Effect_Size_WWC)
+inputs_se <- wwc %>% pull(SE)
+inputs_n <- wwc %>% pull(f_Outcome_Sample_Size)
+inputs_ncovar <- wwc %>% pull(ncovar)
+inputs_fID <- wwc %>% pull(f_FindingID)
+inputs_matrix <- purrr::transpose(list(inputs_r, inputs_se, inputs_n,inputs_ncovar,inputs_fID))
+inputs_matrix[[1]]  
+
+
+# loop through all findings
+b <- tibble()
+for (i in inputs_matrix) {
+  suppressMessages(
+    entry <- pkonfound(pluck(i,1), pluck(i,2), pluck(i,3),pluck(i,4),
+                       n_treat=NULL, model_type="ols", to_return="raw_output") %>% head(-2) %>% 
+      append(list(f_FindingID = pluck(i,5)))
+  )
+  b <- bind_rows(b,entry)
+}
+
+# rename variables
+b <- b %>% rename(pctbias.g.ols = perc_bias_to_change,
+                  itcv.g.ols = itcv,
+                  itcvGz.g.ols = itcvGz,
+                  RIR_primary.g.ols = RIR_primary,
+                  RIR_perc.g.ols = RIR_perc 
+)
+glimpse(b)
+
+```
+## Pkonfound Calculations (Dichotomous Only) 
+Using pkonfound again, except this time separating out the dichotomous outcomes and using the log odds transformation of hedges g (i.e., multiplied by 1.65)
+
+```{r}
+# subset dichotomous findings
+wwc_dich <- wwc %>% filter(dichotomous == 1)
+nrow(wwc_dich)
+
+# remove some problematic rows. these are findings where the implied 2x2 table
+# cannot be created because some cells are too small 
+wwc_dich <- wwc_dich %>% 
+  filter(!f_FindingID %in% c(14175,14178,14335,29192,29403,27788,27791,28385,
+                             28494,37449,45737,43966,45371,47641,48133,48194,
+                             48195,48196,48197,48198,48199,48202,48203,48204,
+                             48205,48205,48206,48208,48209,48210,48211,48212,
+                             48214,48215,48215,48216,48218,48219,48995,48996,
+                             48999,49001,49002,49004,49005,49007,49008,48948,
+                             48949,48950,48952,48953,48955,48956,48958,48959,
+                             48977,48961,48962,49033,49804,50341,50344,51362,
+                             51366,53048,56066,59888,63438,63492,63499,63500,
+                             63505,63506,63507,63508,63485,63486,63491,64503,
+                             64504,64505,74786,74790,74792,74793,74794) )
+nrow(wwc_dich)
+
+
+# create input matrix for loop
+inputs_r_lo <- wwc_dich %>% pull(g.logodds)
+inputs_se_lo <- wwc_dich %>% pull(se.logodds)
+inputs_n_lo <- wwc_dich %>% pull(f_Outcome_Sample_Size)
+inputs_ncovar_lo <- wwc_dich %>% pull(ncovar)
+inputs_ntreat_lo <- wwc_dich %>% pull(f_Outcome_Intervention_SS)
+inputs_fID_lo <- wwc_dich %>% pull(f_FindingID)
+
+inputs_matrix_lo <- purrr::transpose(list(inputs_r_lo, inputs_se_lo, inputs_n_lo,
+                                          inputs_ncovar_lo, inputs_ntreat_lo,inputs_fID_lo))
+inputs_matrix_lo[[1]]  
+
+
+# loop through all dichotomous findings
+b_lo <- tibble()
+for (i in inputs_matrix_lo) {
+  suppressMessages(
+    entry <- pkonfound(pluck(i,1), pluck(i,2), pluck(i,3),pluck(i,4),
+                       n_treat=pluck(i,5), model_type="logistic", to_return="raw_output") %>% 
+      append(list(f_FindingID = pluck(i,6))) 
+  )
+  entry$starting_table <- NULL
+  entry$final_table <- NULL
+  b_lo <- bind_rows(b_lo,entry)
+}
+
+
+# rename variables
+b_lo <- b_lo %>% rename(
+  RIR_primary.lo = RIR_primary,
+  RIR_perc.lo = RIR_perc,
+  fragility_primary.lo = fragility_primary,
+  user_SE.lo = user_SE,
+  analysis_SE.lo = analysis_SE,
+  RIR_supplemental.lo = RIR_supplemental,
+  fragility_supplemental.lo = fragility_supplemental 
+)
+glimpse(b_lo)
+
+```
+
+## Merge pkonfound results from both loops 
+```{r}
+ncol(b); ncol(b_lo)
+nrow(b); nrow(b_lo)
+
+b_merged <- left_join(b, b_lo, by = "f_FindingID")
+glimpse(b_merged)
+
+```
+
+# Additional Calculations
+Before merging the pkonfound results with the initial WWC data, we are producing some additional information for analysis but not needed by the WWC benchmarks. This includes calculate the sensitivity measures "by hand" in two  ways:
+1. Using the correlation as the effect size
+2. Using hedges g (WWC Effect Size) as the effect size
+ 
+Jump to "Merge Sensitivity calculations with WWC Dataset" if only interested in how the benchmark distributions were created
+
+## Calculate RIR and ITCV by hand using correlation metric 
+
+```{r}
+# convert t to r
+wwc <- wwc %>% mutate(r = t / sqrt(df.E21 + t^2))
+summary(wwc$r)
+
+# calculate t-crit for alpha = 0.05
+wwc <- wwc %>% mutate(tcrit.05 = abs(qt(0.05/2,df.E21)) )
+wwc <- wwc %>% mutate(tcrit.05 = ifelse(f_Effect_Size_WWC < 0, -tcrit.05, tcrit.05) )
+summary(wwc$tcrit.05)
+
+# find threshold value for correlation where no longer significant at 0.05 level
+# Formula: r# = t_crit / sqrt(df + t_crit^2)
+wwc <- wwc %>% mutate(r.thresh = tcrit.05 / sqrt(df.E21 + (tcrit.05^2) ) )
+
+# Calculate ITCV 
+wwc <- wwc %>% mutate(itcv.rh = ifelse(abs(r) > abs(r.thresh) & r*r.thresh > 0, 
+                               (r - r.thresh) / (1 - abs(r.thresh)),
+                               (r - r.thresh) / (1 + abs(r.thresh)) 
+                            )
+                      ) 
+summary(wwc$itcv.rh)
+
+# calc pct bias and get RIR
+wwc <- wwc %>% 
+  mutate(pctbias.rh = ifelse(abs(r) >= abs(r.thresh),(1 - (r.thresh/r)) * 100, (1 - (r/r.thresh)) * 100 ))
+wwc <- wwc %>% mutate(RIR.rh = pctbias.rh/100 * f_Outcome_Sample_Size ) 
+
+summary(wwc$pctbias.rh)
+summary(wwc$RIR.rh)
+
+```
+
+## Calculate RIR by hand using WWC effect size
+
+```{r}
+# find effect size threshold, delta#, for alpha = 0.05
+wwc <- wwc %>% mutate(delta.thresh = tcrit.05 * SE )
+
+# calc pct bias and get RIR
+wwc <- wwc %>% 
+  mutate(pctbias.gh = ifelse(abs(f_Effect_Size_WWC) >= abs(delta.thresh),(1 - (delta.thresh/f_Effect_Size_WWC)) * 100, 
+                            (1 - (f_Effect_Size_WWC/delta.thresh)) * 100 ))
+wwc <- wwc %>% 
+  mutate(pctbias.rh = ifelse(abs(r) >= abs(r.thresh),(1 - (r.thresh/r)) * 100, (1 - (r/r.thresh)) * 100 ))
+
+
+wwc <- wwc %>% mutate(RIR.gh = pctbias.gh/100 * f_Outcome_Sample_Size ) 
+
+summary(wwc$pctbias.gh)
+summary(wwc$RIR.gh)
+```
+
+#   Merge Sensitivity calculations with WWC dataset
+Also, creating  wwc_merged.RDS file for analysis
+
+## Check for duplicates before moving forward
+
+```{r}
+wwc %>% group_by(f_FindingID) %>% filter(n() > 1)
+b_merged %>% group_by(f_FindingID) %>% filter(n() > 1)
+
+```
+## Merge datasets
+
+```{r}
+ncol(wwc); ncol(b_merged)
+nrow(wwc); nrow(b_merged)
+
+wwc_merged  <- left_join(wwc, b_merged, by = "f_FindingID", relationship = "one-to-one")
+
+```
+## Delete unneeded rows and columns
+
+```{r}
+
+# delete rare occurrences where more than one RIR is calculated
+wwc_merged$RIR_supplemental.lo %>% is.na() %>% table()
+wwc_merged$fragility_supplemental.lo %>% is.na() %>% table()
+
+wwc_merged <- wwc_merged %>% filter(is.na(RIR_supplemental.lo))
+
+wwc_merged$RIR_supplemental.lo %>% is.na() %>% table()
+wwc_merged$fragility_supplemental.lo %>% is.na() %>% table()
+
+# remove unneeded columns
+wwc_merged <- wwc_merged %>% select(-c(RIR_supplemental.lo,fragility_supplemental.lo))
+
+```
+
+## Save analysis file (wwc_merged.RDS)
+```{r}
+saveRDS(wwc_merged,"wwc-merged-13Sep2023.RDS")
+```
+
+#   Create wwc_shiny.RDS file for benchmarks website
+
+```{r}
+# remove outcomes_types of NA or Uncertain
+wwc_shiny <- wwc_merged %>% filter(outcome_type == "Continuous" | outcome_type == "Dichotomous")
+table(wwc_shiny$outcome_type, wwc_shiny$dichotomous, useNA="always")
+
+# create one column that can be used by shiny app when displaying distributions 
+wwc_shiny <- wwc_shiny %>% mutate( RIR_primary = 
+                                      ifelse(dichotomous==1, RIR_primary.lo, RIR_primary.g.ols))
+wwc_shiny <- wwc_shiny %>% mutate( RIR_percent = 
+                                      ifelse(dichotomous==1, RIR_perc.lo, RIR_perc.g.ols))
+wwc_shiny %>% filter(dichotomous==1) %>% pull(RIR_primary.lo) %>% is.na() %>% table
+wwc_shiny %>% filter(dichotomous==1) %>% pull(RIR_perc.lo) %>% is.na() %>% table
+
+nrow(wwc_shiny)
+
+# save file
+saveRDS(wwc_shiny,"wwc-shiny-13Sep2023.RDS")
+
+```
+
+
