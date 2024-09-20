@@ -82,7 +82,9 @@ server <- function(input, output, session) {
       }
       
       if (!is.null(input$userValue) && !is.na(input$userValue) && 
-          (input$selectedVariable == "RIR_primary" || input$selectedVariable == "RIR_percent")) {
+          (input$selectedVariable == "RIR_primary" || 
+           input$selectedVariable == "RIR_percent" || 
+           input$selectedVariable == "fragility_primary.lo")) {
         p <- p + geom_vline(xintercept = input$userValue, color = "red", linetype = "solid")
       }
       
@@ -129,7 +131,7 @@ server <- function(input, output, session) {
   output$percentileResult <- renderText({
     req(input$selectedVariable, input$userValue)
     
-    if (input$selectedVariable %in% c("RIR_primary", "RIR_percent")) {
+    if (input$selectedVariable %in% c("RIR_primary", "RIR_percent","fragility_primary.lo")) {
       user_value <- input$userValue
       filtered_data_subset <- filtered_data()[, input$selectedVariable]
       

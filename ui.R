@@ -24,7 +24,7 @@ jscode <- "shinyjs.refresh_page = function() { history.go(0); }"
 shinyUI(
   fluidPage(
     theme = shinythemes::shinytheme("lumen"),
-    use_darkmode(),
+    #use_darkmode(),
     
     tags$head(HTML("<title>Sensitivity Analysis Benchmarks: What Works Clearinghouse</title><link rel='icon' href='konfound-logo-rectangle.png' type='image/gif/png'>"),
               tags$script(src="script.js"),
