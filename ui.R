@@ -1,3 +1,7 @@
+################################################################################
+################################ Set Up ########################################
+################################################################################
+
 library(shiny)
 library(tidyverse)
 library(readxl)
@@ -11,13 +15,19 @@ library(shinyscreenshot)
 library(shinyDarkmode)
 
 
+
+################################################################################
+############################### Load Data ######################################
 ################################################################################
 
 #data <- readxl::read_excel("Shiny_Data.xlsx")
 data <- readRDS("wwc-shiny-13Sep2023.RDS")
 
-################################################################################
 
+
+################################################################################
+############################### Style Sheet ####################################
+################################################################################
 
 jscode <- "shinyjs.refresh_page = function() { history.go(0); }" 
 
@@ -260,25 +270,34 @@ shinyUI(
               )
               )
     ),
+
+
+
+                      
     
-    
+################################################################################
+############################### Header #########################################
 ################################################################################    
     
-
     titlePanel(title = div(img(style = "height:0.75em; vertical-align:center; margin-bottom: 18px;",
                                src = "konfound-logo-rectangle.png",
                                alt = "Konfound R package logo"), 
                            "Sensitivity Analysis Benchmarks")),
 
     h3("Data from What Works Clearinghouse"),
-
+    tags$p("Explore sensitivity analyses calculated for the", 
+           tags$a(href="https://ies.ed.gov/ncee/wwc/", "What Works Clearinghouse"),
+           "through an interactive web app."),
+    tags$p(tags$a(href="", "Read more here for details about compiling the database.")),
     tags$p(actionButton("visit_website_button",
                   icon = icon("globe", lib = "font-awesome"),
                   label = "KonFound-It website",
                   onclick = "window.open('https://konfound-it.org/', '_blank')")
-           ),    
+           ),
+    tags$p(tags$i(paste("Powered by version", packageVersion('konfound'), "of the konfound R package."))),
   
-  
+
+                      
   ### For refresh button: 
   useShinyjs(),
   extendShinyjs(text = jscode, functions = "refresh_page"),
@@ -335,7 +354,14 @@ shinyUI(
                                                       "Unselected"),
                                           selected = "Unselected")
                         ),
+
+################################################################################
                         
+                    tags$p("Note: These RIR are based on Hedges GC. ", 
+                           tags$a(href="", "Read more here.")  
+                    ),
+                        
+################################################################################
                         
                         mainPanel(
                           
@@ -403,11 +429,21 @@ shinyUI(
                       
                       tags$h4("Tools"),
                       tags$ul(
-                        tags$li(tags$a(href="https://CRAN.R-project.org/package=konfound", "R package (CRAN version)")),
-                        tags$li(tags$a(href="https://github.com/konfound-project/konfound", "R package (development version)")),
-                        tags$li(tags$a(href="https://konfound-project.shinyapps.io/konfound-it/", "R Shiny app")),
-                        tags$li(tags$a(href="https://doi.org/10.1177/1536867X19874223", "Stata package")),
-                        tags$li(tags$a(href="https://konfound-project.shinyapps.io/wwc-sensitivity-benchmark/", "Sensitivity Analysis Benchmarks: Data from What Works Clearinghouse"), "[BETA]")
+                        tags$li(icon("r-project", lib = "font-awesome", style = "color: #639dad"),
+                                tags$a(href="https://CRAN.R-project.org/package=konfound", 
+                                       "R package (CRAN version)")),
+                        tags$li(icon("r-project", lib = "font-awesome", style = "color: #639dad"),
+                                tags$a(href="https://github.com/konfound-project/konfound", 
+                                       "R package (development version)")),
+                        tags$li(icon("calculator", lib = "font-awesome", style = "color: #639dad"),
+                                tags$a(href="https://konfound-project.shinyapps.io/konfound-it/", 
+                                       "R Shiny app")),
+                        tags$li(icon("stripe-s", lib = "font-awesome", style = "color: #639dad"),
+                                tags$a(href="https://doi.org/10.1177/1536867X19874223", 
+                                       "Stata package")),
+                        tags$li(icon("warehouse", lib = "font-awesome", style = "color: #639dad"),
+                                tags$a(href="https://konfound-project.shinyapps.io/wwc-sensitivity-benchmark/", 
+                                       "Benchmarks: What Works Clearinghouse"))
                       ),
                       hr(),
                       
@@ -519,17 +555,18 @@ shinyUI(
 
 ################################################################################
 
-
-
 hr(),
 
-tags$p(tags$b("To cite this application: "),
-       "Rosenberg, J. M., Narvaiz, S., Xu, R., Lin, Q., Maroulis, S., Frank, K. A., Saw, G., & Staudt Willet, K. B. (2023).",
-       tags$i("Konfound-It!: Quantify the robustness of causal inferences"), 
-       "(v. 2.0.0)."
-),
+################################################################################
+############################### Citation #######################################
+################################################################################
 
-
+             tags$p(tags$b("To cite this application:"))
+             tags$p(
+               "Maroulis, S., Frank, K., Overstreet, D., & Staudt Willet, K. B. (2024).",
+               tags$i("Sensitivity analysis benchmarks: Data from What Works Clearinghouse"), 
+               "[R Shiny app powered by konfound R package version 1.0.2]."
+             ),
 
 hr(),
 
@@ -538,8 +575,6 @@ tags$p("KonFound-It! is supported by IES Grant",
        tags$a(href="https://ies.ed.gov/funding/grantsearch/details.asp?ID=5723", "#R305D220022"),
        "— 'Quantifying the Robustness of Causal Inferences: Extensions and Application to Existing Databases' "
 ),
-
-
 
 hr(),
 
