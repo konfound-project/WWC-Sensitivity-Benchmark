@@ -288,7 +288,7 @@ shinyUI(
     tags$p("Explore sensitivity analyses calculated for the", 
            tags$a(href="https://ies.ed.gov/ncee/wwc/", "What Works Clearinghouse"),
            "through an interactive web app."),
-    tags$p(tags$a(href="", "Read more here for details about compiling the database.")),
+#    tags$p(tags$a(href="", "Read more here for details about compiling the database.")),
     tags$p(actionButton("visit_website_button",
                   icon = icon("globe", lib = "font-awesome"),
                   label = "KonFound-It website",
@@ -359,10 +359,10 @@ shinyUI(
 
 ################################################################################ 
 
-                          tags$p("Note: These RIR are based on Hedges GC. ", 
-                                 tags$a(href="", "Read more here.")  
-                          )
-                        ),
+               #           tags$p("Note: These RIR are based on Hedges GC. ", 
+              #                   tags$a(href="", "Read more here.")  
+              #            )
+                       ),
 
 ################################################################################ 
 
@@ -562,12 +562,12 @@ hr(),
 ############################### Citation #######################################
 ################################################################################
 
-tags$p(tags$b("To cite this application:")),
-tags$p(
-  "Maroulis, S., Frank, K., Overstreet, D., & Staudt Willet, K. B. (2024).",
-  tags$i("Sensitivity analysis benchmarks: Data from What Works Clearinghouse"), 
-  "[R Shiny app powered by konfound R package version 1.0.2]."
-),
+#tags$p(tags$b("To cite this application:")),
+#tags$p(
+#  "Maroulis, S., Frank, K., Overstreet, D., & Staudt Willet, K. B. (2024).",
+#  tags$i("Sensitivity analysis benchmarks: Data from What Works Clearinghouse"), 
+#  "[R Shiny app powered by konfound R package version 1.0.2]."
+#),
 
 hr(),
 
