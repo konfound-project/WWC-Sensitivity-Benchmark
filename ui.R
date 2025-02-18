@@ -284,17 +284,20 @@ shinyUI(
                                alt = "Konfound R package logo"), 
                            "Sensitivity Analysis Benchmarks")),
 
-    h3("Data from What Works Clearinghouse"),
-    tags$p("Explore sensitivity analyses calculated for the", 
+    h3("Robustness of Findings in What Works Clearinghouse"),
+    tags$p("This page contains sensitivity analysis measures calculated for findings the ", 
            tags$a(href="https://ies.ed.gov/ncee/wwc/", "What Works Clearinghouse"),
-           "through an interactive web app."),
-#    tags$p(tags$a(href="", "Read more here for details about compiling the database.")),
+           " has rated as meeting its standards for a strong and well-executed research design. 
+           These values can be used to create tailored reference distributions that help locate
+           the robustness of your finding in a distribution of other similar and well-designed educational studies."),
+    tags$p("For more information on using these benchmarks, please see  ", tags$a(href="", "Practice Guide.")),
+    tags$p("For details on the calculations of the benchmark values, please see ", tags$a(href="", "here.")),
     tags$p(actionButton("visit_website_button",
                   icon = icon("globe", lib = "font-awesome"),
                   label = "KonFound-It website",
                   onclick = "window.open('https://konfound-it.org/', '_blank')")
            ),
-    tags$p(tags$i(paste("Powered by version", packageVersion('konfound'), "of the konfound R package."))),
+   # tags$p(tags$i(paste("Powered by version", packageVersion('konfound'), "of the konfound R package."))),
   
 
                       
@@ -348,11 +351,11 @@ shinyUI(
                                         selected = "All"
                             ),
                             selectInput("selectedVariable", "Choose a Sensitivity Measure:",
-                                        choices = c("Robustness of Inferences to Replacement (RIR)" = "RIR_primary", 
-                                                    "RIR as a percentage of Sample Size" = "RIR_percent", 
+                                        choices = c("RIR as a percentage of Sample Size" = "RIR_percent",
+                                                    "Robustness of Inferences to Replacement (RIR)" = "RIR_primary", 
                                                     "Fragility (dichotomous only)" = "fragility_primary.lo",
                                                     "Unselected"),
-                                        selected = "Unselected"
+                                        selected = "RIR_percent"
                             )
                           ),
                           

@@ -3,7 +3,7 @@ title: "create-wwc-dbs-13Sep2023"
 output: 
   html_document:
      number_sections: true
-date: "2024-07-16"
+date: "2025-01-20"
 ---
 
 ```{r, include=FALSE}
@@ -190,6 +190,7 @@ summary(wwc$SE)
 
 # Use pkonfound to calculate sensitivity measures
 These calculations will be the ones used as the WWC benchmark distribution by R Shiny App.
+
 ## Create additional needed variables
 
 ```{r}
@@ -208,7 +209,7 @@ wwc <- wwc %>% mutate(se.logodds = SE * 1.65)
 ```
 
 ## Pkonfound Calculations (All Findings)
-Loop through all findings, ise pkonfound to calculate sensitivity measures for each finding.
+Loop through all findings, using pkonfound to calculate sensitivity measures for each finding.
 Note: Ignore specialized dichotomous settings for now, and just treat as if every effect size is continuous. Will come back to dichotomous only below.
 
 ```{r}
