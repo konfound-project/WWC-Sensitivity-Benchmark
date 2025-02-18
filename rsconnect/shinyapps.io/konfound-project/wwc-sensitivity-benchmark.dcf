@@ -5,7 +5,7 @@ account: konfound-project
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 11810466
-bundleId: 8516102
+bundleId: 9547155
 url: https://konfound-project.shinyapps.io/wwc-sensitivity-benchmark/
 version: 1
 asMultiple: FALSE
