@@ -290,8 +290,8 @@ shinyUI(
            " has rated as meeting its standards for a strong and well-executed research design. 
            These values can be used to create tailored reference distributions that help locate
            the robustness of your finding in a distribution of other similar and well-designed educational studies."),
-    tags$p("For more information on using these benchmarks, please see  ", 
-           tags$a(href="", "Practice Guide.")),
+    #tags$p("For more information on using these benchmarks, please see  ", 
+    #       tags$a(href="", "Practice Guide.")),
     tags$p("For details on the calculations of the benchmark values, please see ", 
            tags$a(href="create-wwc-dbs-13Sep2023.html", "here.")),
     tags$p(actionButton("visit_website_button",
