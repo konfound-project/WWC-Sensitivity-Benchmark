@@ -36,7 +36,7 @@ shinyUI(
     theme = shinythemes::shinytheme("lumen"),
     #use_darkmode(),
     
-    tags$head(HTML("<title>Sensitivity Analysis Benchmarks: What Works Clearinghouse</title><link rel='icon' href='konfound-logo-rectangle.png' type='image/gif/png'>"),
+    tags$head(HTML("<title>Sensitivity Analysis Benchmarks: What Works Clearinghouse</title><link rel='icon' href='KonFoundit!-mark.png' type='image/gif/png'>"),
               tags$script(src="script.js"),
               tags$style(HTML("
               
@@ -280,7 +280,7 @@ shinyUI(
 ################################################################################    
     
     titlePanel(title = div(img(style = "height:0.75em; vertical-align:center; margin-bottom: 18px;",
-                               src = "konfound-logo-rectangle.png",
+                               src = "KonFoundit!-mark.png",
                                alt = "Konfound R package logo"), 
                            "Sensitivity Analysis Benchmarks")),
 
@@ -290,8 +290,10 @@ shinyUI(
            " has rated as meeting its standards for a strong and well-executed research design. 
            These values can be used to create tailored reference distributions that help locate
            the robustness of your finding in a distribution of other similar and well-designed educational studies."),
-    tags$p("For more information on using these benchmarks, please see  ", tags$a(href="", "Practice Guide.")),
-    tags$p("For details on the calculations of the benchmark values, please see ", tags$a(href="", "here.")),
+    tags$p("For more information on using these benchmarks, please see  ", 
+           tags$a(href="", "Practice Guide.")),
+    tags$p("For details on the calculations of the benchmark values, please see ", 
+           tags$a(href="create-wwc-dbs-13Sep2023.html", "here.")),
     tags$p(actionButton("visit_website_button",
                   icon = icon("globe", lib = "font-awesome"),
                   label = "KonFound-It website",
@@ -454,19 +456,28 @@ tabPanel(div(icon("screwdriver-wrench", lib = "font-awesome"), " Resources"),
          
          tags$h4("Explanatory Resources"),
          tags$ul(
-           tags$li(tags$a(href="https://konfound-it.org/page/faq/", "FAQ")), 
-           tags$li(tags$a(href="https://www.dropbox.com/s/33zkk861g04hocf/Overview%20of%20Konfound%20commands%20with%20inputs%20and%20outputs.docx?dl=0", "Overview of pkonfound commands")),
-           tags$li(tags$a(href="https://drive.google.com/file/d/1qbRx2penqzb7kEJkxJD3ARf26CjXMhzg/view", "Quick examples")), 
-           tags$li(tags$a(href="https://www.dropbox.com/s/o67e7w2sm8uww18/quantifying%20the%20robustness%20of%20causal%20inferences%20combined%20frameworks%20for%20stat%20horizons%20distribute.pptx?dl=0", "Powerpoint quantifying the robustness of causal inferences combined frameworks")),
-           tags$li(tags$a(href="https://www.dropbox.com/s/8t6x00mokkljksh/quantifying%20the%20robustness%20of%20causal%20inferences%20%20comparison%20of%20frameworks.pptx?dl=0", "Powerpoint for comparison of frameworks"))
+           tags$li(icon("globe", lib = "font-awesome", style = "color: #639dad"),
+                   tags$a(href="https://konfound-it.org/page/faq/", "FAQ")), 
+           tags$li(icon("images", lib = "font-awesome", style = "color: #639dad"),
+                   tags$a(href="https://konfound-it.org/page/resources/overview-of-techniques.pptx", "Overview of KonFound techniques")),
+           tags$li(icon("file-pdf", lib = "font-awesome", style = "color: #639dad"),
+                   tags$a(href="https://www.dropbox.com/s/33zkk861g04hocf/Overview%20of%20Konfound%20commands%20with%20inputs%20and%20outputs.docx?dl=0", "Overview of KonFound commands")),
+           tags$li(icon("file-pdf", lib = "font-awesome", style = "color: #639dad"),
+                   tags$a(href="https://drive.google.com/file/d/1qbRx2penqzb7kEJkxJD3ARf26CjXMhzg/view", "Quick examples")), 
+           tags$li(icon("images", lib = "font-awesome", style = "color: #639dad"),
+                   tags$a(href="https://www.dropbox.com/s/o67e7w2sm8uww18/quantifying%20the%20robustness%20of%20causal%20inferences%20combined%20frameworks%20for%20stat%20horizons%20distribute.pptx?dl=0", "Slides quantifying the robustness of causal inferences combined frameworks")),
+           tags$li(icon("images", lib = "font-awesome", style = "color: #639dad"),
+                   tags$a(href="https://www.dropbox.com/s/8t6x00mokkljksh/quantifying%20the%20robustness%20of%20causal%20inferences%20%20comparison%20of%20frameworks.pptx?dl=0", "Slides for comparison of frameworks"))
          ),
          hr(),
          
          
          tags$h4("Resources for Publication"),
          tags$ul(
-           tags$li(tags$a(href="https://www.dropbox.com/s/bc4ert79kgbsac4/Examples%20of%20applications%20of%20indices%20for%20quantifying%20the%20robustness%20of%20causal%20inferences.docx?dl=0", "Published empirical examples")),
-           tags$li(tags$a(href="https://www.dropbox.com/s/accoz5xu82vy27v/KonFound-it%21%20enhanced.xlsx?dl=0", "Spreadsheet for calculating indices (KonFound-it!)"))
+           tags$li(icon("file-pdf", lib = "font-awesome", style = "color: #639dad"),
+                   tags$a(href="https://www.dropbox.com/s/bc4ert79kgbsac4/Examples%20of%20applications%20of%20indices%20for%20quantifying%20the%20robustness%20of%20causal%20inferences.docx?dl=0", "Published empirical examples")),
+           tags$li(icon("table", lib = "font-awesome", style = "color: #639dad"),
+                   tags$a(href="https://www.dropbox.com/s/accoz5xu82vy27v/KonFound-it%21%20enhanced.xlsx?dl=0", "Spreadsheet for calculating indices (KonFound-it!)"))
          ),
          hr(),
          
@@ -546,7 +557,7 @@ tabPanel(div(icon("screwdriver-wrench", lib = "font-awesome"), " Resources"),
            tags$li("Specific Questions: Ask in the", tags$a(href="https://groups.google.com/g/konfound-it", "KounFound-It! Google Group")),
            tags$li("Issues with the konfound R Package: Post to", tags$a(href="https://github.com/konfound-project/konfound/issues", "konfound GitHub Issues")),
            tags$li("Overall KonFound-It! Project Inquiries: Contact", tags$a(href="https://msu.edu/~kenfrank/", "Ken Frank")),
-           tags$li("Benchmarks: What Works Clearinghouse: Contact", tags$a(href="http://www.public.asu.edu/~smarouli/Spiro_Maroulis/Home.html", "Spiro Maroulis")),
+           tags$li("Sensitivity Analysis Benchmarks - What Works Clearinghouse: Contact", tags$a(href="http://www.public.asu.edu/~smarouli/Spiro_Maroulis/Home.html", "Spiro Maroulis")),
            tags$li("R Package: Contact", tags$a(href="https://www.linkedin.com/in/qinyun-lin-b72763112/", "Qinyun Lin")),
            tags$li("R Shiny App: Contact", tags$a(href="https://joshuamrosenberg.com/", "Joshua Rosenberg")),
            tags$li("Stata Package: Contact", tags$a(href="https://sites.google.com/site/ranxupersonalweb/", "Ran Xu")),
